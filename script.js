@@ -61,7 +61,6 @@
 						<div class="sdk-win-content">\
 							<h2>Parabéns! Você venceu!</h2>\
 							<button class="sdk-btn sdk-replay">Rejogar</button>\
-							<button class="sdk-btn sdk-change-diff">Mudar Dificuldade</button>\
 						</div>\
 					</div>');
 					$('body').append(notification);
@@ -93,13 +92,23 @@
 					notification.find('.sdk-replay').click(function() {
 						notification.remove();
 						$this.empty();
+						// Resetar defaults
+						defaults.selected = null;
+						defaults.selectedSolution = null;
+						defaults.hits = 0;
+						defaults.errors = 0;
+						defaults.anwerTracker = {
+							"1" : 9,
+							"2" : 9,
+							"3" : 9,
+							"4" : 9,
+							"5" : 9,
+							"6" : 9,
+							"7" : 9,
+							"8" : 9,
+							"9" : 9
+						};
 						defaults.matrix = $this.createMatrix();
-						$this.createDiffPicker();
-					});
-					// Botão de mudar dificuldade
-					notification.find('.sdk-change-diff').click(function() {
-						notification.remove();
-						$this.empty();
 						$this.createDiffPicker();
 					});
 				};
@@ -155,106 +164,105 @@
 			};
 			
 			// create the playable table
-			$this.createTable = function() {
-				//array to hold the dom reference to the table matrix so that we dont have to travers dom all the time
-				defaults.domMatrix = [];
-				//create table 
-				defaults.table = $("<div class='sdk-table sdk-no-show'></div>");
-				//add rows and columns to table
-				for (var row=0;row<defaults.numOfRows;row++) {
-					defaults.domMatrix[row] = [];
-					var tempRow = $("<div class='sdk-row'></div>");
-					//set solid border after 3rd and 6th row
-					if (row == 2 || row == 5) tempRow.addClass("sdk-border"); 
-					for (var col=0;col<defaults.numOfCols;col++) {
-						defaults.domMatrix[row][col] = $("<div class='sdk-col' data-row='"+row+"' data-col='"+col+"'></div>");
-						//set solid border after 3rd and 6th column
-						if (col == 2 || col == 5) defaults.domMatrix[row][col].addClass("sdk-border");
-						//add columns to rows
-						tempRow.append(defaults.domMatrix[row][col]);
+
+				$this.createTable = function() {
+					defaults.domMatrix = [];
+					defaults.table = $("<div class='sdk-table sdk-no-show'></div>");
+
+					// Adiciona painel de estatísticas
+					var statsPanel = $("<div class='sdk-stats-panel'></div>");
+					statsPanel.html(
+						"<span class='sdk-hits'>Acertos: <b>0</b></span> | " +
+						"<span class='sdk-errors'>Erros: <b>0</b></span> | " +
+						"<span class='sdk-percent'>Porcentagem: <b>0%</b></span>"
+					);
+					$this.append(statsPanel);
+
+					for (var row=0;row<defaults.numOfRows;row++) {
+						defaults.domMatrix[row] = [];
+						var tempRow = $("<div class='sdk-row'></div>");
+						if (row == 2 || row == 5) tempRow.addClass("sdk-border"); 
+						for (var col=0;col<defaults.numOfCols;col++) {
+							defaults.domMatrix[row][col] = $("<div class='sdk-col' data-row='"+row+"' data-col='"+col+"'></div>");
+							if (col == 2 || col == 5) defaults.domMatrix[row][col].addClass("sdk-border");
+							tempRow.append(defaults.domMatrix[row][col]);
+						}
+						defaults.table.append(tempRow);
 					}
-					//add rows to table
-					defaults.table.append(tempRow);
-				}
-				//add extra div in here for background decoration
-				defaults.table.append("<div class='sdk-table-bk'></div>");
-				//add table to screen
-				$this.append(defaults.table);
-				
-				//populate table with random number depending on the level difficulty 
-				var items = defaults.level;
-				while (items > 0) {
-					var row = Math.floor(Math.random() * (8 - 0 + 1)) + 0;
-					var col = Math.floor(Math.random() * (8 - 0 + 1)) + 0;
-					if (defaults.domMatrix[row][col].children().length == 0) {
-						defaults.domMatrix[row][col].append("<div class='sdk-solution'>"+ defaults.matrix[row][col] +"</div>");
-						defaults.anwerTracker[defaults.matrix[row][col].toString()]--;
-						items--;
+					defaults.table.append("<div class='sdk-table-bk'></div>");
+					$this.append(defaults.table);
+
+					var items = defaults.level;
+					while (items > 0) {
+						var row = Math.floor(Math.random() * (8 - 0 + 1)) + 0;
+						var col = Math.floor(Math.random() * (8 - 0 + 1)) + 0;
+						if (defaults.domMatrix[row][col].children().length == 0) {
+							defaults.domMatrix[row][col].append("<div class='sdk-solution'>"+ defaults.matrix[row][col] +"</div>");
+							defaults.anwerTracker[defaults.matrix[row][col].toString()]--;
+							items--;
+						}
 					}
-				}
-				//click even when clicking on cells
-				defaults.table.find(".sdk-col").click(function () {
-					//remove any helper styling
-					$this.find(".sdk-solution").removeClass("sdk-helper");
-					$this.find(".sdk-col").removeClass("sdk-selected");
-					if ($(this).children().length == 0) {
-						//select this 
-						defaults.domMatrix[$(this).attr("data-row")][$(this).attr("data-col")].addClass("sdk-selected");
-						defaults.selected = defaults.domMatrix[$(this).attr("data-row")][$(this).attr("data-col")];
-						defaults.selectedSolution = defaults.matrix[$(this).attr("data-row")][$(this).attr("data-col")]
-					} else {
-						//add helper style
-						$this.highlightHelp(parseInt($(this).text()));
-					}
-				});
-				
-				//add answers choices to screen
-				$this.answerPicker();
-								
-				//remove the no show class to do a small fadein animation with css
-				setTimeout(function () {
-					defaults.table.removeClass("sdk-no-show");
-				}, 300);
-			};
+					defaults.table.find(".sdk-col").click(function () {
+						$this.find(".sdk-solution").removeClass("sdk-helper");
+						$this.find(".sdk-col").removeClass("sdk-selected");
+						if ($(this).children().length == 0) {
+							defaults.domMatrix[$(this).attr("data-row")][$(this).attr("data-col")].addClass("sdk-selected");
+							defaults.selected = defaults.domMatrix[$(this).attr("data-row")][$(this).attr("data-col")];
+							defaults.selectedSolution = defaults.matrix[$(this).attr("data-row")][$(this).attr("data-col")]
+						} else {
+							$this.highlightHelp(parseInt($(this).text()));
+						}
+					});
+
+					$this.answerPicker();
+
+					setTimeout(function () {
+						defaults.table.removeClass("sdk-no-show");
+					}, 300);
+				};
 			
 			//add answer picker to screen
-			$this.answerPicker = function() {
-				//make a answer container 
-				var answerContainer = $("<div class='sdk-ans-container'></div>");
-				//add answer buttons to container
-				for (var a in defaults.anwerTracker) {
-					//check if need to show button else we add it for space reason but dont pick up clicks from it
-					if (defaults.anwerTracker[a] > 0) {
-						answerContainer.append("<div class='sdk-btn'>"+a+"</div>");
-					} else {
-						answerContainer.append("<div class='sdk-btn sdk-no-show'>"+a+"</div>");
+
+				$this.answerPicker = function() {
+					var answerContainer = $("<div class='sdk-ans-container'></div>");
+					for (var a in defaults.anwerTracker) {
+						if (defaults.anwerTracker[a] > 0) {
+							answerContainer.append("<div class='sdk-btn'>"+a+"</div>");
+						} else {
+							answerContainer.append("<div class='sdk-btn sdk-no-show'>"+a+"</div>");
+						}
 					}
-				}
-				answerContainer.find(".sdk-btn").click(function () {
-					//only listen to clicks if it is shown
-					if (!$(this).hasClass("sdk-no-show") && defaults.selected != null && defaults.selected.children().length == 0 ) {
-						//check if it is the answer
-						if ( defaults.selectedSolution == parseInt($(this).text()) ) {
-							//decrease answer tracker
-							defaults.anwerTracker[$(this).text()]--;
-							//if answer tracker is 0 hide that button
-							if (defaults.anwerTracker[$(this).text()] == 0) {
-								$(this).addClass("sdk-no-show");
+					answerContainer.find(".sdk-btn").click(function () {
+						if (!$(this).hasClass("sdk-no-show") && defaults.selected != null && defaults.selected.children().length == 0 ) {
+							var acertou = false;
+							if ( defaults.selectedSolution == parseInt($(this).text()) ) {
+								defaults.anwerTracker[$(this).text()]--;
+								if (defaults.anwerTracker[$(this).text()] == 0) {
+									$(this).addClass("sdk-no-show");
+								}
+								$this.find(".sdk-col").removeClass("sdk-selected");
+								defaults.selected.append("<div class='sdk-solution'>"+ defaults.selectedSolution +"</div>");
+								defaults.hits++;
+								acertou = true;
+							} else {
+								defaults.errors++;
 							}
-							//remove highlighter
-							$this.find(".sdk-col").removeClass("sdk-selected");
-							//add the answer to screen
-							defaults.selected.append("<div class='sdk-solution'>"+ defaults.selectedSolution +"</div>");
-							if ($this.checkIfWon()) {
+							// Atualiza painel de estatísticas
+							var total = defaults.hits + defaults.errors;
+							var percent = total > 0 ? Math.round((defaults.hits / total) * 100) : 0;
+							$this.find('.sdk-hits b').text(defaults.hits);
+							$this.find('.sdk-errors b').text(defaults.errors);
+							$this.find('.sdk-percent b').text(percent + '%');
+							// Verifica vitória
+							if (acertou && $this.checkIfWon()) {
 								$this.showWinNotification();
 							}
+							defaults.selected = null;
+							defaults.selectedSolution = null;
 						}
-						
-					}
-				});
-				$this.append(answerContainer);
-				
-			};
+					});
+					$this.append(answerContainer);
+				};
 			
 			//add highlight help
 			$this.highlightHelp = function(number) {
