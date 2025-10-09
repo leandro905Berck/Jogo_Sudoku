@@ -91,8 +91,8 @@
 					// Botão de rejogar
 					notification.find('.sdk-replay').click(function() {
 						notification.remove();
+						$this.find('.sdk-stats-panel').remove();
 						$this.empty();
-						// Resetar defaults
 						defaults.selected = null;
 						defaults.selectedSolution = null;
 						defaults.hits = 0;
