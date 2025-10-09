@@ -41,17 +41,68 @@
 			
 
 			// Função para verificar se o jogador ganhou
-			$this.checkIfWon = function() {
-				for (var row = 0; row < defaults.numOfRows; row++) {
-					for (var col = 0; col < defaults.numOfCols; col++) {
-						if (defaults.domMatrix[row][col].children().length == 0 || 
-                            defaults.domMatrix[row][col].find('.sdk-solution').text() != defaults.matrix[row][col]) {
-							return false;
+				$this.checkIfWon = function() {
+					for (var row = 0; row < defaults.numOfRows; row++) {
+						for (var col = 0; col < defaults.numOfCols; col++) {
+							if (defaults.domMatrix[row][col].children().length == 0 || 
+								defaults.domMatrix[row][col].find('.sdk-solution').text() != defaults.matrix[row][col]) {
+								return false;
+							}
 						}
 					}
-				}
-				return true;
-			};
+					return true;
+				};
+
+				// Função para mostrar notificação de vitória
+				$this.showWinNotification = function() {
+					// Remove notificação anterior se existir
+					$('.sdk-win-notification').remove();
+					var notification = $('<div class="sdk-win-notification">\
+						<div class="sdk-win-content">\
+							<h2>Parabéns! Você venceu!</h2>\
+							<button class="sdk-btn sdk-replay">Rejogar</button>\
+							<button class="sdk-btn sdk-change-diff">Mudar Dificuldade</button>\
+						</div>\
+					</div>');
+					$('body').append(notification);
+					// Centralizar na tela
+					notification.css({
+						position: 'fixed',
+						top: '50%',
+						left: '50%',
+						transform: 'translate(-50%, -50%)',
+						'z-index': 9999,
+						'background': '#fff',
+						'box-shadow': '0 2px 10px rgba(0,0,0,0.2)',
+						'border-radius': '10px',
+						'padding': '30px',
+						'text-align': 'center',
+						'min-width': '280px'
+					});
+					notification.find('.sdk-win-content h2').css({
+						'margin-bottom': '20px',
+						'color': '#707070'
+					});
+					notification.find('.sdk-btn').css({
+						'margin': '10px',
+						'font-size': '1.2em',
+						'width': 'auto',
+						'padding': '10px 24px'
+					});
+					// Botão de rejogar
+					notification.find('.sdk-replay').click(function() {
+						notification.remove();
+						$this.empty();
+						defaults.matrix = $this.createMatrix();
+						$this.createDiffPicker();
+					});
+					// Botão de mudar dificuldade
+					notification.find('.sdk-change-diff').click(function() {
+						notification.remove();
+						$this.empty();
+						$this.createDiffPicker();
+					});
+				};
 
 
 			//creates the sudoku number grid
@@ -194,8 +245,8 @@
 							$this.find(".sdk-col").removeClass("sdk-selected");
 							//add the answer to screen
 							defaults.selected.append("<div class='sdk-solution'>"+ defaults.selectedSolution +"</div>");
-if ($this.checkIfWon()) {
-								alert("Parabéns! Você completou o jogo!");
+							if ($this.checkIfWon()) {
+								$this.showWinNotification();
 							}
 						}
 						
